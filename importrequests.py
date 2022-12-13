@@ -54,7 +54,13 @@ def remove_past_dates(today):
 
     #update most recent search
     remove_dates = """
-        DELETE from disreserve WHERE date < '{}'""".format(today)
+        
+        INSERT INTO oldresdates (email, pass, park, date, available, notify, notifications, method, phone, modified)
+        SELECT email, pass, park, date, available, notify, notifications, method, phone, modified FROM disreserve
+        WHERE date < '{}'
+
+
+        DELETE from disreserve WHERE date < '{}'""".format(today, today)
         
     with a.get_connection("jimcreel/trial") as conn:
                 cursor = conn.cursor()
