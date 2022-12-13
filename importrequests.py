@@ -57,7 +57,7 @@ def remove_past_dates(today):
         
         INSERT INTO oldresdates (email, pass, park, date, available, notify, notifications, method, phone, modified)
         SELECT email, pass, park, date, available, notify, notifications, method, phone, modified FROM disreserve
-        WHERE date < '{}'
+        WHERE date < '{}';
 
 
         DELETE from disreserve WHERE date < '{}'""".format(today, today)
