@@ -30,11 +30,11 @@ dream = parse_json[4]
 
 #further parse the json into the list elements
 
-inspire_avail = inspire['calendar-availabilities']
-believe_avail = believe['calendar-availabilities']
-enchant_avail = enchant['calendar-availabilities']
-imagine_avail = imagine['calendar-availabilities']
-dream_avail = dream['calendar-availabilities']
+inspire_avail = inspire['availabilities']
+believe_avail = believe['availabilities']
+enchant_avail = enchant['availabilities']
+imagine_avail = imagine['availabilities']
+dream_avail = dream['availabilities']
 
 def main():
     today=date.today()
@@ -123,7 +123,13 @@ def make_queries(query_list):
             check_pass_json = dream_avail
         if(check_pass == 'imagine'):
             check_pass_json = imagine_avail
-        result = get_park_availability(check_date,check_pass_json,check_park)
+        #print(check_pass_json)    
+        if check_park == 'ANY':
+            dlrResult = get_park_availability(check_date,check_pass_json,'DLR_DP')
+            dcaResult = get_park_availability(check_date,check_pass_json,'DLR_CA')
+            if dlrResult or dcaResult:
+                result = True
+        else: result = get_park_availability(check_date,check_pass_json,check_park)
         #print(check_date, check_park, result)    
         result_tup = (check_date, check_pass, check_park, result)
         results_list.append(result_tup)
@@ -132,29 +138,15 @@ def make_queries(query_list):
 #This function searches the json as a list of dictionaries,
 #finds the date, returns the date's index. 
 
-def get_date_index(avail, querydate):
+def get_park_availability(querydate, avail, querypark):
     #print(avail)
     for i, dic in enumerate(avail):
-        #print(dic['date'])
-        if dic['date'] == querydate:
-            return i
+        #print(dic['date'] + dic['facilityId'])
+        if dic['date'] == querydate and dic['facilityId'] == querypark:
+            #print(i)
+            return dic['slots'][0]['available']
         
-#This function uses the date index to navigate to the dictionary
-#at date_index, determines which park to evaluate, and returns the park
-#status
-def get_park_availability(querydate,magickey,park):
-    dateindex = get_date_index(magickey, querydate)
-    dp_avail = magickey[dateindex]['facilities'][1]['available']
-    dca_avail = magickey[dateindex]['facilities'][0]['available']
-    if (park == 'DP'):
-        return dp_avail
-    if (park == 'DCA'):
-        return dca_avail
-    if (park == 'ANY'):
-        if dp_avail or dca_avail:
-            return True
-        else:
-            return False
+
     
 def notify():
     d = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
@@ -172,25 +164,14 @@ def notify():
         dcursor.execute(fetch_avail)
         not_records = dcursor.fetchall()
         
-    #save notifications to csv
-   # with open('/Users/jimcreel/Desktop/resScraper/notificationLog.txt', 'a') as z:
-    #    csv_writer = csv.writer(z)
-     #   for mytuple in not_records:
-      #      csv_writer.writerow(mytuple)
-    
-    #grab values from row
-    print(not_records)
-    #with open('log.csv','w+', newline ='') as logcsv:
-    #   writecsv = csv.writer(logcsv)
-    #    writecsv.writerow(not_records)
              
     for row in range(len(not_records)):
         email = not_records[row][0]
         magickey = not_records[row][1]
         park = not_records[row][2]
-        if (park == 'DP'):
+        if (park == 'DLR_DP'):
             parkfull = 'for Disneyland'
-        if (park == 'DCA'):
+        if (park == 'DLR_CA'):
             parkfull = "for California Adventure"
         else:
             parkfull = ''
@@ -233,3 +214,34 @@ def notify():
             
 main()
 
+### DEPRECATED, index no longer needed in new data structure
+#This function uses the date index to navigate to the dictionary
+#at date_index, determines which park to evaluate, and returns the park
+#status
+#def get_park_availability(querydate,magickey,querypark):
+#    dateindex = get_date_index(magickey, querydate, querypark)
+#    #print(dateindex)
+#    return magickey['querydate']['slots']['available']
+    
+    #if (park == 'DP'):
+    #    return dp_avail
+    #if (park == 'DCA'):
+    #    return dca_avail
+    #if (park == 'ANY'):
+    #    if dp_avail or dca_avail:
+    #        return True
+    #    else:
+    #        return False
+
+### IN PROGRESS, save values to CSV
+ #save notifications to csv
+   # with open('/Users/jimcreel/Desktop/resScraper/notificationLog.txt', 'a') as z:
+    #    csv_writer = csv.writer(z)
+     #   for mytuple in not_records:
+      #      csv_writer.writerow(mytuple)
+    
+    #grab values from row
+    #print(not_records)
+    #with open('log.csv','w+', newline ='') as logcsv:
+    #   writecsv = csv.writer(logcsv)
+    #    writecsv.writerow(not_records)
