@@ -31,7 +31,7 @@ inspire_json = json.dumps(inspire_avail, indent = 4)
 
 print(inspire_json)
 with open('inspiredates.json','w') as outfile:
-   json.dump(inspire_json,outfile)
+   outfile.write(inspire_json)
 
 #with open ('inspiredates.json', 'rb') as f:
 #    inspire_dates=Prodict.from_dict(json.load(f))
