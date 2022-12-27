@@ -1,8 +1,6 @@
 import requests
 import json
 import bitdotio
-from box import Box
-import pandas as pd
 import psycopg2
 import itertools
 import os
@@ -21,20 +19,20 @@ resp=requests.get(url, headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WO
 dates_dict = resp.text
 parse_json = json.loads(dates_dict)
 
-#parse the json into separate keys
-inspire = parse_json[0]
-believe = parse_json[1]
-enchant = parse_json[2]
-imagine = parse_json[3]
-dream = parse_json[4]
+#Data is separated into a list of calendar availability with 5 elements separated by key level
+inspire_avail = parse_json[0]['availabilities']
+believe_avail = parse_json[1]['availabilities']
+enchant_avail = parse_json[2]['availabilities']
+imagine_avail = parse_json[3]['availabilities']
+dream_avail = parse_json[4]['availabilities']
 
 #further parse the json into the list elements
 
-inspire_avail = inspire['availabilities']
-believe_avail = believe['availabilities']
-enchant_avail = enchant['availabilities']
-imagine_avail = imagine['availabilities']
-dream_avail = dream['availabilities']
+#inspire_avail = inspire['availabilities']
+#believe_avail = believe['availabilities']
+#enchant_avail = enchant['availabilities']
+#imagine_avail = imagine['availabilities']
+#dream_avail = dream['availabilities']
 
 def main():
     today=date.today()
@@ -103,7 +101,10 @@ def get_list():
         cursor.execute(retrieve_data)
         record=cursor.fetchall()
         return(record)
-    
+
+#This function takes the list of user requested dates, parks, and passes returned by get_list() and passes 
+# those arguments into the get_park_availability function
+#   
 def make_queries(query_list):
     results_list = []
     for row in range(len(query_list)):
@@ -112,17 +113,18 @@ def make_queries(query_list):
         check_park = query_list[row][1]
         check_pass = query_list[row][0]
         #print(check_pass)
-        
-        if(check_pass == 'inspire'):
-            check_pass_json = inspire_avail
-        if(check_pass == 'believe'):
-            check_pass_json = believe_avail
-        if(check_pass == 'enchant'):
-            check_pass_json = enchant_avail
-        if(check_pass == 'dream'):
-            check_pass_json = dream_avail
-        if(check_pass == 'imagine'):
-            check_pass_json = imagine_avail
+        match check_pass:
+            case 'inspire':
+                check_pass_json = inspire_avail
+            case 'believe':
+                check_pass_json = believe_avail
+            case 'enchant':
+                check_pass_json = enchant_avail
+            case 'dream':
+                check_pass_json = dream_avail
+            case 'imagine':
+                check_pass_json = imagine_avail
+       
         #print(check_pass_json)    
         if check_park == 'ANY':
             dlrResult = get_park_availability(check_date,check_pass_json,'DLR_DP')
@@ -135,19 +137,18 @@ def make_queries(query_list):
         results_list.append(result_tup)
     return(results_list)
 
-#This function searches the json as a list of dictionaries,
-#finds the date, returns the date's index. 
+#This function grabs park availability for each unique date/park/pass combination
 
 def get_park_availability(querydate, avail, querypark):
     #print(avail)
-    for i, dic in enumerate(avail):
+    for index, availabilityDictionary in enumerate(avail):
         #print(dic['date'] + dic['facilityId'])
-        if dic['date'] == querydate and dic['facilityId'] == querypark:
+        if availabilityDictionary['date'] == querydate and availabilityDictionary['facilityId'] == querypark:
             #print(i)
-            return dic['slots'][0]['available']
+            return availabilityDictionary['slots'][0]['available']
         
 
-    
+#This function makes a new call to the db to generate a list of notifications, generates a message, then sends out notifications via SMS or email  
 def notify():
     d = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
     notify_list = []

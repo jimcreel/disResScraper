@@ -264,9 +264,9 @@
                 "slotIds": {
                     "inspire-key-pass": "DLR_DP_AP_DAILY"
                 },
-                "available": false,
+                "available": true,
                 "blocked": false,
-                "unavailableReason": "NO_INV",
+                "unavailableReason": "NONE",
                 "overflow": false
             }
         ]
@@ -604,9 +604,9 @@
                 "slotIds": {
                     "inspire-key-pass": "DLR_DP_AP_DAILY"
                 },
-                "available": true,
+                "available": false,
                 "blocked": false,
-                "unavailableReason": "NONE",
+                "unavailableReason": "NO_INV",
                 "overflow": false
             }
         ]
