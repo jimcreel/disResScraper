@@ -26,14 +26,6 @@ enchant_avail = parse_json[2]['availabilities']
 imagine_avail = parse_json[3]['availabilities']
 dream_avail = parse_json[4]['availabilities']
 
-#further parse the json into the list elements
-
-#inspire_avail = inspire['availabilities']
-#believe_avail = believe['availabilities']
-#enchant_avail = enchant['availabilities']
-#imagine_avail = imagine['availabilities']
-#dream_avail = dream['availabilities']
-
 def main():
     today=date.today()
     d1 = today.strftime("%Y-%m-%d")
@@ -47,14 +39,12 @@ def main():
 
 def remove_past_dates(today):
 
-#This function updates the remote db with any newly available dates
+#This function updates the remote db to remove any past dates
     a = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
-
-    #update most recent search
     remove_dates = """
         
-        INSERT INTO oldresdates (email, pass, park, date, available, notify, notifications, method, phone, modified)
-        SELECT email, pass, park, date, available, notify, notifications, method, phone, modified FROM disreserve
+        INSERT INTO oldresdates 
+        SELECT * FROM disreserve
         WHERE date < '{}';
 
 
@@ -64,6 +54,7 @@ def remove_past_dates(today):
                 cursor = conn.cursor()
                 cursor.execute(remove_dates)
 
+#This function injects new data into the remote db
 def update_data(new_data):
     for row in range(len(new_data)):
         update_date = new_data[row][0]
@@ -102,8 +93,10 @@ def get_list():
         record=cursor.fetchall()
         return(record)
 
-#This function takes the list of user requested dates, parks, and passes returned by get_list() and passes 
-# those arguments into the get_park_availability function
+#This function takes the list of user requested dates, parks, and passes returned by get_list(), reads
+# individual variables from the list and passes 
+# those arguments into the get_park_availability function along with the 
+# appropriate key level data
 #   
 def make_queries(query_list):
     results_list = []
@@ -137,7 +130,7 @@ def make_queries(query_list):
         results_list.append(result_tup)
     return(results_list)
 
-#This function grabs park availability for each unique date/park/pass combination
+#This function searches the appropriate key data for the specified park/pass combination
 
 def get_park_availability(querydate, avail, querypark):
     #print(avail)
@@ -152,20 +145,22 @@ def get_park_availability(querydate, avail, querypark):
 def notify():
     d = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
     notify_list = []
+    # selects only rows at which the specified park is available and which notifications are turned on
     fetch_avail = """
         SELECT email, pass, park, date, notifications, method, phone, modified
         FROM disreserve
         WHERE available= true AND notify = true
         """
-    
+    # message for users who have received 10 notifications for the same date/pass combination
     ck_nots = "If you wish to no longer receive notifications for this reservation, please open the following link:"
-    #retrieve test data
+    
+    #retrieve test data and store it in a list of tuples
     with d.get_connection("jimcreel/trial") as dconn:
         dcursor = dconn.cursor()
         dcursor.execute(fetch_avail)
         not_records = dcursor.fetchall()
         
-             
+    # iterate through the list of notifications and generate the message      
     for row in range(len(not_records)):
         email = not_records[row][0]
         magickey = not_records[row][1]
@@ -201,6 +196,7 @@ def notify():
                         to='+1{}'.format(phone)
                         )
                 print(message.sid)
+                # increment the notification counter
                 f = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
                 increment_note = """
                     UPDATE disreserve 
