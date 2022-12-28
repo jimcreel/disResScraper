@@ -9,7 +9,8 @@ from datetime import datetime
 from datetime import date
 import csv
 
-
+#get the api key
+apiKey=os.environ.get('BIT_DOT_IO_API_KEY')
 #target site
 url='https://disneyland.disney.go.com/passes/blockout-dates/api/get-availability/?product-types=inspire-key-pass,believe-key-pass,enchant-key-pass,imagine-key-pass,dream-key-pass&destinationId=DLR&numMonths=14'
 
@@ -40,7 +41,7 @@ def main():
 def remove_past_dates(today):
 
 #This function updates the remote db to remove any past dates
-    a = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
+    a = bitdotio.bitdotio(apiKey)
     remove_dates = """
         
         INSERT INTO oldresdates 
@@ -63,7 +64,7 @@ def update_data(new_data):
         update_avail = new_data[row][3]
         
         #connect to bit.io with api key
-        c = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
+        c = bitdotio.bitdotio(apiKey)
 
         #update most recent search
         update_db = """
@@ -79,7 +80,7 @@ def update_data(new_data):
 
 def get_list():
     #connect to bit.io with api key
-    b = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
+    b = bitdotio.bitdotio(apiKey)
     
     #check to see which dates are being requested by users
     retrieve_data = """
@@ -143,7 +144,7 @@ def get_park_availability(querydate, avail, querypark):
 
 #This function makes a new call to the db to generate a list of notifications, generates a message, then sends out notifications via SMS or email  
 def notify():
-    d = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
+    d = bitdotio.bitdotio(apiKey)
     notify_list = []
     # selects only rows at which the specified park is available and which notifications are turned on
     fetch_avail = """
@@ -186,8 +187,8 @@ def notify():
             if (nots < 10):
                 #send the not via sms        
                 print(phone, msg)
-                account_sid = "AC0e18af4b5d6a7bd2c440bf47d515c051"
-                auth_token = "83bfe69ba814924e99a98459387246b0"
+                account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+                auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
                 client = Client(account_sid, auth_token)
                 message = client.messages \
                         .create(
@@ -197,7 +198,7 @@ def notify():
                         )
                 print(message.sid)
                 # increment the notification counter
-                f = bitdotio.bitdotio("v2_3wYE3_p3tdjf89BN3c3dbka8tE5nN")
+                f = bitdotio.bitdotio(apiKey)
                 increment_note = """
                     UPDATE disreserve 
                     SET notifications = notifications + 1, modified = NOW()
