@@ -166,12 +166,13 @@ def notify():
         email = not_records[row][0]
         magickey = not_records[row][1]
         park = not_records[row][2]
-        if (park == 'DLR_DP'):
-            parkfull = 'for Disneyland'
-        if (park == 'DLR_CA'):
-            parkfull = "for California Adventure"
-        else:
-            parkfull = ''
+        match park:
+            case 'DLR_DP':
+                parkfull = 'for Disneyland'
+            case 'DLR_CA':
+                parkfull = 'for California Adventure'
+            case 'ANY':
+                parkfull = ''
         date = not_records[row][3]
         #datetime_obj = datetime.strptime(date, '%y-%m-%d')
         #print(datetime_obj)
