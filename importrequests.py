@@ -160,7 +160,14 @@ def notify():
         dcursor = dconn.cursor()
         dcursor.execute(fetch_avail)
         not_records = dcursor.fetchall()
-        
+    with open ('notifications.log', 'a') as logfile:
+        if not not_records:
+            now = datetime.now()
+            no_not = "No notifications sent at {}".format(now)
+            logfile.write(no_not)
+        for notification in not_records:
+            logfile.write("$s\n" % notification)
+
     # iterate through the list of notifications and generate the message      
     for row in range(len(not_records)):
         email = not_records[row][0]
