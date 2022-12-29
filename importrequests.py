@@ -32,16 +32,20 @@ dream_avail = parse_json[4]['availabilities']
 def main():
     today=date.today()
     d1 = today.strftime("%Y-%m-%d")
+    print('removing past dates')
     remove_past_dates(today)
     #print(today)
+    print('getting list of dates')
     query_list=get_list()
+    print('making list of queries')
     new_data=make_queries(query_list)
     #print(new_data)
+    print('updating new data')
     update_data(new_data)
+    print('creating list of notifications')
     notify()
 
 def remove_past_dates(today):
-
 #This function updates the remote db to remove any past dates
     a = bitdotio.bitdotio(apiKey)
     remove_dates = """
@@ -82,6 +86,7 @@ def update_data(new_data):
 
 def get_list():
     #connect to bit.io with api key
+    
     b = bitdotio.bitdotio(apiKey)
     
     #check to see which dates are being requested by users
@@ -102,6 +107,7 @@ def get_list():
 # appropriate key level data
 #   
 def make_queries(query_list):
+    print('making query list')
     results_list = []
     for row in range(len(query_list)):
         #print(query_list[row])
@@ -137,6 +143,7 @@ def make_queries(query_list):
 
 def get_park_availability(querydate, avail, querypark):
     #print(avail)
+    print('getting park availability')
     for index, availabilityDictionary in enumerate(avail):
         #print(dic['date'] + dic['facilityId'])
         if availabilityDictionary['date'] == querydate and availabilityDictionary['facilityId'] == querypark:
@@ -146,6 +153,7 @@ def get_park_availability(querydate, avail, querypark):
 
 #This function makes a new call to the db to generate a list of notifications, generates a message, then sends out notifications via SMS or email  
 def notify():
+    print('creating notification list')
     d = bitdotio.bitdotio(apiKey)
     notify_list = []
     # selects only rows at which the specified park is available and which notifications are turned on
