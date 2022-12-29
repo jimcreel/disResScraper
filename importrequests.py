@@ -8,6 +8,8 @@ from twilio.rest import Client
 from datetime import datetime
 from datetime import date
 import csv
+import smtplib, ssl
+from email.message import EmailMessage
 
 #get the api key
 apiKey=os.environ.get('BIT_DOT_IO_API_KEY')
@@ -188,39 +190,66 @@ def notify():
         phone = not_records[row][6]
         msg = ("Reservations {} are available on {} for {} key holders. Visit https://tinyurl.com/5n8yetcw to make your reservation.").format(parkfull,date,magickey)
         with open('notifications.log', 'a') as logfile:
-            logmessage = '{} - {} - {} - {}\n'.format(now,parkfull,nots, phone)
+            logmessage = '{} - {} - {} - {}\n'.format(now,parkfull,date, nots, phone)
             logfile.write(logmessage)
         #print(msg)
        # print("to:",email,".","Reservations for",park,"are available for",date)
         #print(not_records[row][4])
         #print(method)
-        if (method == 'phone'):
-            if (nots < 10):
-                #send the not via sms        
-                print(phone, msg)
-                account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
-                auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-                client = Client(account_sid, auth_token)
-                message = client.messages \
-                        .create(
-                        body = msg,
-                        from_ = "+15107267039",
-                        to='+1{}'.format(phone)
-                        )
-                print(message.sid)
-                # increment the notification counter
-                f = bitdotio.bitdotio(apiKey)
-                increment_note = """
-                    UPDATE disreserve 
-                    SET notifications = notifications + 1, modified = NOW()
-                    WHERE phone = '{}' and date = '{}' and park = '{}' and pass = '{}'
-                    """.format(phone, date, park, magickey)
-                #print(increment_note)
-                with f.get_connection("jimcreel/trial") as fconn:
-                    fcursor = fconn.cursor()
-                    fcursor.execute(increment_note)
-                    
-            
+        match method:
+            case 'phone':
+                phone_notifications(msg, phone, date, parkfull, magickey,nots)
+            case 'email':
+                email_notifications(email,date,parkfull,magickey)
+#this function sends an sms notification
+def phone_notifications(msg, phone, date, parkfull, magickey,nots):
+    if (nots < 10):
+        #send the not via sms        
+        print(phone, msg)
+        account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+        auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+        client = Client(account_sid, auth_token)
+        message = client.messages \
+                .create(
+                body = msg,
+                from_ = "+15107267039",
+                to='+1{}'.format(phone)
+                )
+        print(message.sid)
+        # increment the notification counter
+        f = bitdotio.bitdotio(apiKey)
+        increment_note = """
+            UPDATE disreserve 
+            SET notifications = notifications + 1, modified = NOW()
+            WHERE phone = '{}' and date = '{}' and park = '{}' and pass = '{}'
+            """.format(phone, date, parkfull, magickey)
+        #print(increment_note)
+        with f.get_connection("jimcreel/trial") as fconn:
+            fcursor = fconn.cursor()
+            fcursor.execute(increment_note)
+
+ #this function sends an email notification
+def email_notifications(email, date, parkfull, magickey):
+    print('attempting to send email')
+    smtp_server = 'az1-ss106.a2hosting.com'
+    port = 465
+    send_email = 'notifications@magic-reservations.com'
+    receiver_email = email
+    password = os.environ.get('MAGIC_RESERVATIONS_EMAIL_PASSWORD')
+    context = ssl.create_default_context()
+    emailMsg = EmailMessage()
+    emailMsg.set_content('''
+           
+        Get ready to make your reservation! Park reservations are available on {} {}!\n
+        Visit https://tinyurl.com/5n8yetcw to make your reservation.\n
+        Thank you for using magic-reservations.com!'''.format(date,parkfull))
+    emailMsg['Subject'] = 'Reservations are available for {} keys on {}'.format(magickey,date)
+    emailMsg['From'] = send_email
+    emailMsg['To'] = receiver_email
+    
+    with smtplib.SMTP_SSL(smtp_server,port,context=context) as server:
+        server.login(send_email,password)
+        server.send_message(emailMsg, send_email, receiver_email)
 main()
 
 ### DEPRECATED, index no longer needed in new data structure
