@@ -18,8 +18,8 @@ url='https://disneyland.disney.go.com/passes/blockout-dates/api/get-availability
 
 #open the site
 print('opening the reservation site...')
-resp=requests.get(url, headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36', "Upgrade-Insecure-Requests": "1","DNT": "1","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5","Accept-Encoding": "gzip, deflate"})
-#print(resp)
+resp=requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36', "Upgrade-Insecure-Requests": "1","DNT": "1","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5","Accept-Encoding": "gzip, deflate"})
+print(resp)
 dates_dict = resp.text
 parse_json = json.loads(dates_dict)
 
@@ -108,8 +108,8 @@ def get_list():
 # appropriate key level data
 #   
 def make_queries(query_list):
-    print('making query list')
     results_list = []
+    print('getting park availability')
     for row in range(len(query_list)):
         #print(query_list[row])
         check_date = query_list[row][2]
@@ -144,7 +144,7 @@ def make_queries(query_list):
 
 def get_park_availability(querydate, avail, querypark):
     #print(avail)
-    print('getting park availability')
+    
     for index, availabilityDictionary in enumerate(avail):
         #print(dic['date'] + dic['facilityId'])
         if availabilityDictionary['date'] == querydate and availabilityDictionary['facilityId'] == querypark:
