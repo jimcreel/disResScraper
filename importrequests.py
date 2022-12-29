@@ -161,15 +161,13 @@ def notify():
         dcursor.execute(fetch_avail)
         not_records = dcursor.fetchall()
     with open ('notifications.log', 'a') as logfile:
-        if not not_records:
+        records_string = str(not_records).strip('[]')
+        if records_string =='':
             now = datetime.now()
-            no_not = "No notifications sent at {}".format(now)
-            logfile.write(no_not)
-        else:
-            for notification in not_records:
-                logfile.write("$s\n" % notification)
-
-    # iterate through the list of notifications and generate the message      
+            no_not = "No notifications sent at {}\n".format(now)
+            logfile.write(no_not)  
+            
+# iterate through the list of notifications and generate the message      
     for row in range(len(not_records)):
         email = not_records[row][0]
         magickey = not_records[row][1]
@@ -184,10 +182,14 @@ def notify():
         date = not_records[row][3]
         #datetime_obj = datetime.strptime(date, '%y-%m-%d')
         #print(datetime_obj)
+        now = datetime.now()
         nots = not_records[row][4]
         method = not_records[row][5]
         phone = not_records[row][6]
         msg = ("Reservations {} are available on {} for {} key holders. Visit https://tinyurl.com/5n8yetcw to make your reservation.").format(parkfull,date,magickey)
+        with open('notifications.log', 'a') as logfile:
+            logmessage = '{} - {} - {} - {}\n'.format(now,parkfull,nots, phone)
+            logfile.write(logmessage)
         #print(msg)
        # print("to:",email,".","Reservations for",park,"are available for",date)
         #print(not_records[row][4])
