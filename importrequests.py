@@ -189,17 +189,24 @@ def notify():
     d = bitdotio.bitdotio(apiKey)
     notify_list = []
     # selects only rows at which the specified park is available and which notifications are turned on
+    
     fetch_avail = """
         SELECT email, pass, park, date, notifications, method, phone, modified, resort
         FROM disreserve
         WHERE available= true AND notify = true
         """
+    update_notes ="""
+        UPDATE disreserve 
+        SET notifications = notifications + 1, modified = NOW()
+        WHERE available = true AND notify = true"""
+
     # message for users who have received 10 notifications for the same date/pass combination
     ck_nots = "If you wish to no longer receive notifications for this reservation, please open the following link:"
     
     #retrieve test data and store it in a list of tuples
     with d.get_connection("jimcreel/trial") as dconn:
         dcursor = dconn.cursor()
+        dcursor.execute(update_notes)
         dcursor.execute(fetch_avail)
         not_records = dcursor.fetchall()
     print('logging info to file...')
@@ -289,15 +296,7 @@ def phone_notifications(msg, phone, date, parkfull, magickey,nots):
         print(message.sid)
         # increment the notification counter
         f = bitdotio.bitdotio(apiKey)
-        phone_increment_note = """
-            UPDATE disreserve 
-            SET notifications = notifications + 1, modified = NOW()
-            WHERE phone = '{}' and date = '{}' and park = '{}' and pass = '{}'
-            """.format(phone, date, parkfull, magickey)
-        #print(increment_note)
-        with f.get_connection("jimcreel/trial") as fconn:
-            fcursor = fconn.cursor()
-            fcursor.execute(phone_increment_note)
+        
 
  #this function sends an email notification
 def email_notifications(email, date, parkfull, magickey):
@@ -323,15 +322,7 @@ def email_notifications(email, date, parkfull, magickey):
         server.send_message(emailMsg, send_email, receiver_email)
      # increment the notification counter
     f = bitdotio.bitdotio(apiKey)
-    email_increment_note = """
-        UPDATE disreserve 
-        SET notifications = notifications + 1, modified = NOW()
-        WHERE phone = '{}' and date = '{}' and park = '{}' and pass = '{}'
-        """.format(email, date, parkfull, magickey)
-    #print(increment_note)
-    with f.get_connection("jimcreel/trial") as fconn:
-        fcursor = fconn.cursor()
-        fcursor.execute(email_increment_note)
+   
 main()
 
 ### DEPRECATED, index no longer needed in new data structure
