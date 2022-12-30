@@ -171,7 +171,8 @@ def notify():
         dcursor = dconn.cursor()
         dcursor.execute(fetch_avail)
         not_records = dcursor.fetchall()
-    with open ('notifications.log', 'a') as logfile:
+    print('logging info to file...')
+    with open ('/home/jimcreel/Documents/git/disResScraper/notifications.log', 'a') as logfile:
         records_string = str(not_records).strip('[]')
         if records_string =='':
             now = datetime.now()
@@ -198,7 +199,7 @@ def notify():
         method = not_records[row][5]
         phone = not_records[row][6]
         msg = ("Reservations {} are available on {} for {} key holders. Visit https://tinyurl.com/5n8yetcw to make your reservation.").format(parkfull,date,magickey)
-        with open('notifications.log', 'a') as logfile:
+        with open('/home/jimcreel/Documents/git/disResScraper/notifications.log', 'a') as logfile:
             logmessage = '{} - {} - {} - {} - {}\n'.format(now,parkfull,date, nots, phone, email)
             logfile.write(logmessage)
         #print(msg)
