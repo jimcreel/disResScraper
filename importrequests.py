@@ -199,7 +199,7 @@ def notify():
         phone = not_records[row][6]
         msg = ("Reservations {} are available on {} for {} key holders. Visit https://tinyurl.com/5n8yetcw to make your reservation.").format(parkfull,date,magickey)
         with open('notifications.log', 'a') as logfile:
-            logmessage = '{} - {} - {} - {}\n'.format(now,parkfull,date, nots, phone)
+            logmessage = '{} - {} - {} - {} - {}\n'.format(now,parkfull,date, nots, phone, email)
             logfile.write(logmessage)
         #print(msg)
        # print("to:",email,".","Reservations for",park,"are available for",date)
