@@ -15,13 +15,19 @@ from email.message import EmailMessage
 apiKey=os.environ.get('BIT_DOT_IO_API_KEY')
 #target site
 url='https://disneyland.disney.go.com/passes/blockout-dates/api/get-availability/?product-types=inspire-key-pass,believe-key-pass,enchant-key-pass,imagine-key-pass,dream-key-pass&destinationId=DLR&numMonths=14'
+wdwUrl='https://disneyworld.disney.go.com/passes/blockout-dates/api/get-availability/?product-types=disney-incredi-pass,disney-sorcerer-pass,disney-pirate-pass,disney-pixie-dust-pass&destinationId=WDW&numMonths=13'
 
 #open the site
 print('opening the reservation site...')
 resp=requests.get(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36', "Upgrade-Insecure-Requests": "1","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5","Accept-Encoding": "gzip, deflate"})
-print(resp)
+#print(resp)
+wdwResp =requests.get(wdwUrl, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36', "Upgrade-Insecure-Requests": "1","Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8","Accept-Language": "en-US,en;q=0.5","Accept-Encoding": "gzip, deflate"})
+#print(wdwResp)
 dates_dict = resp.text
+wdwDates=wdwResp.text
 parse_json = json.loads(dates_dict)
+dates_dict = resp.text
+wdwParse_json = json.loads(wdwDates)
 
 #Data is separated into a list of calendar availability with 5 elements separated by key level
 inspire_avail = parse_json[0]['availabilities']
@@ -29,6 +35,10 @@ believe_avail = parse_json[1]['availabilities']
 enchant_avail = parse_json[2]['availabilities']
 imagine_avail = parse_json[3]['availabilities']
 dream_avail = parse_json[4]['availabilities']
+incredi_avail=wdwParse_json[0]['availabilities']
+sorceror_avail=wdwParse_json[1]['availabilities']
+pirate_avail=wdwParse_json[2]['availabilities']
+pixie_avail=wdwParse_json[3]['availabilities']
 
 def main():
     today=date.today()
@@ -92,7 +102,7 @@ def get_list():
     
     #check to see which dates are being requested by users
     retrieve_data = """
-        SELECT DISTINCT pass, park, date
+        SELECT DISTINCT pass, park, date, resort
         FROM disreserve
         """
     #retrieve dates
@@ -115,6 +125,7 @@ def make_queries(query_list):
         check_date = query_list[row][2]
         check_park = query_list[row][1]
         check_pass = query_list[row][0]
+        check_resort = query_list[row][3]
         #print(check_pass)
         match check_pass:
             case 'inspire':
@@ -127,17 +138,38 @@ def make_queries(query_list):
                 check_pass_json = dream_avail
             case 'imagine':
                 check_pass_json = imagine_avail
+            case 'incredipass':
+                check_pass_json = incredi_avail
+            case 'sorceror':
+                check_pass_json = sorceror_avail
+            case 'pirate':
+                check_pass_json = pirate_avail
+            case 'pixie':
+                check_pass_json = pixie_avail
        
         #print(check_pass_json)    
-        if check_park == 'ANY':
-            dlrResult = get_park_availability(check_date,check_pass_json,'DLR_DP')
-            dcaResult = get_park_availability(check_date,check_pass_json,'DLR_CA')
-            if dlrResult or dcaResult:
-                result = True
-        else: result = get_park_availability(check_date,check_pass_json,check_park)
-        #print(check_date, check_park, result)    
-        result_tup = (check_date, check_pass, check_park, result)
-        results_list.append(result_tup)
+        if check_resort == 'DLR':
+            if check_park == 'ANY':
+                dlrResult = get_park_availability(check_date,check_pass_json,'DLR_DP')
+                dcaResult = get_park_availability(check_date,check_pass_json,'DLR_CA')
+                if dlrResult or dcaResult:
+                    dlrResult = True
+            else: dlrResult = get_park_availability(check_date,check_pass_json,check_park)
+            #print(check_date, check_park, result)    
+            dlrResult_tup = (check_date, check_pass, check_park, dlrResult)
+            results_list.append(dlrResult_tup)
+        if check_resort == 'WDW':
+            if check_park == 'ANY':
+                mkResult = get_park_availability(check_date,check_pass_json,'WDW_MK')
+                epResult = get_park_availability(check_date,check_pass_json,'WDW_EP')
+                akResult = get_park_availability(check_date,check_pass_json,'WDW_AK')
+                hsResult = get_park_availability(check_date,check_pass_json,'WDW_HS')
+                if mkResult or epResult or akResult or hsResult:
+                    wdwResult = True
+            else: wdwResult = get_park_availability(check_date,check_pass_json,check_park)
+            #print(check_date, check_park, result)    
+            wdwResult_tup = (check_date, check_pass, check_park, wdwResult)
+            results_list.append(wdwResult_tup)
     return(results_list)
 
 #This function searches the appropriate key data for the specified park/pass combination
@@ -154,12 +186,11 @@ def get_park_availability(querydate, avail, querypark):
 
 #This function makes a new call to the db to generate a list of notifications, generates a message, then sends out notifications via SMS or email  
 def notify():
-    print('creating notification list')
     d = bitdotio.bitdotio(apiKey)
     notify_list = []
     # selects only rows at which the specified park is available and which notifications are turned on
     fetch_avail = """
-        SELECT email, pass, park, date, notifications, method, phone, modified
+        SELECT email, pass, park, date, notifications, method, phone, modified, resort
         FROM disreserve
         WHERE available= true AND notify = true
         """
@@ -172,18 +203,33 @@ def notify():
         dcursor.execute(fetch_avail)
         not_records = dcursor.fetchall()
     print('logging info to file...')
-    with open ('/home/jimcreel/Documents/git/disResScraper/notifications.log', 'a') as logfile:
-        records_string = str(not_records).strip('[]')
-        if records_string =='':
-            now = datetime.now()
-            no_not = "No notifications sent at {}\n".format(now)
-            logfile.write(no_not)  
+    if os.path.exists('/home/jimcreel/Documents/git/disResScraper/notifications.log'):
+        with open ('/home/jimcreel/Documents/git/disResScraper/notifications.log', 'a') as logfile:
+            records_string = str(not_records).strip('[]')
+            if records_string =='':
+                now = datetime.now()
+                no_not = "No notifications sent at {}\n".format(now)
+                logfile.write(no_not)  
+    else:
+        with open ('notifications.log', 'a') as logfile:
+            records_string = str(not_records).strip('[]')
+            if records_string =='':
+                now = datetime.now()
+                no_not = "No notifications sent at {}\n".format(now)
+                logfile.write(no_not)
             
 # iterate through the list of notifications and generate the message      
     for row in range(len(not_records)):
         email = not_records[row][0]
         magickey = not_records[row][1]
         park = not_records[row][2]
+        resort = not_records[row][8]
+        if (resort == 'DLR'):
+            passOrKey = 'key'
+            resUrl='https://tinyurl.com/5n8yetcw'
+        else:
+            passOrKey = 'pass'
+            resUrl='https://tinyurl.com/5dewmzje'
         match park:
             case 'DLR_DP':
                 parkfull = 'for Disneyland'
@@ -191,6 +237,14 @@ def notify():
                 parkfull = 'for California Adventure'
             case 'ANY':
                 parkfull = ''
+            case 'WDW_MK':
+                parkfull = 'for Magic Kingdom'
+            case 'WDW_EP':
+                parkfull = 'for Epcot'
+            case 'WDW_AK':
+                parkfull = 'for Animal Kingdom'
+            case 'WDW_HS':
+                parkfull = 'for Hollywood Studios'
         date = not_records[row][3]
         #datetime_obj = datetime.strptime(date, '%y-%m-%d')
         #print(datetime_obj)
@@ -198,10 +252,17 @@ def notify():
         nots = not_records[row][4]
         method = not_records[row][5]
         phone = not_records[row][6]
-        msg = ("Reservations {} are available on {} for {} key holders. Visit https://tinyurl.com/5n8yetcw to make your reservation.").format(parkfull,date,magickey)
-        with open('/home/jimcreel/Documents/git/disResScraper/notifications.log', 'a') as logfile:
-            logmessage = 'Notification sent on {} via {} - {} - {} - {} - {}\n'.format(now,method, parkfull,date, nots, phone, email)
-            logfile.write(logmessage)
+        msg = ("Reservations {} are available on {} for {} {} holders. Visit {} to make your reservation.").format(parkfull,date,magickey,passOrKey,resUrl)
+        #actual path to script log
+        if os.path.exists('/home/jimcreel/Documents/git/disResScraper/notifications.log'):
+            with open('/home/jimcreel/Documents/git/disResScraper/notifications.log', 'a') as logfile:
+                logmessage = 'Notification sent on {} via {} - {} - {} - {} - {}\n'.format(now,method, parkfull,date, nots, phone, email)
+                logfile.write(logmessage)
+        #test environment path to log
+        else:
+            with open('notifications.log', 'a') as logfile:
+                logmessage = 'Notification sent on {} via {} - {} - {} - {} - {}\n'.format(now,method, parkfull,date, nots, phone, email)
+                logfile.write(logmessage)
         #print(msg)
        # print("to:",email,".","Reservations for",park,"are available for",date)
         #print(not_records[row][4])
@@ -228,7 +289,7 @@ def phone_notifications(msg, phone, date, parkfull, magickey,nots):
         print(message.sid)
         # increment the notification counter
         f = bitdotio.bitdotio(apiKey)
-        increment_note = """
+        phone_increment_note = """
             UPDATE disreserve 
             SET notifications = notifications + 1, modified = NOW()
             WHERE phone = '{}' and date = '{}' and park = '{}' and pass = '{}'
@@ -236,7 +297,7 @@ def phone_notifications(msg, phone, date, parkfull, magickey,nots):
         #print(increment_note)
         with f.get_connection("jimcreel/trial") as fconn:
             fcursor = fconn.cursor()
-            fcursor.execute(increment_note)
+            fcursor.execute(phone_increment_note)
 
  #this function sends an email notification
 def email_notifications(email, date, parkfull, magickey):
@@ -260,6 +321,17 @@ def email_notifications(email, date, parkfull, magickey):
     with smtplib.SMTP_SSL(smtp_server,port,context=context) as server:
         server.login(send_email,password)
         server.send_message(emailMsg, send_email, receiver_email)
+     # increment the notification counter
+    f = bitdotio.bitdotio(apiKey)
+    email_increment_note = """
+        UPDATE disreserve 
+        SET notifications = notifications + 1, modified = NOW()
+        WHERE phone = '{}' and date = '{}' and park = '{}' and pass = '{}'
+        """.format(email, date, parkfull, magickey)
+    #print(increment_note)
+    with f.get_connection("jimcreel/trial") as fconn:
+        fcursor = fconn.cursor()
+        fcursor.execute(email_increment_note)
 main()
 
 ### DEPRECATED, index no longer needed in new data structure
