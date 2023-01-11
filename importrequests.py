@@ -14,8 +14,10 @@ from email.message import EmailMessage
 #get the api key
 apiKey=os.environ.get('BIT_DOT_IO_API_KEY')
 #target site
-url='https://disneyland.disney.go.com/passes/blockout-dates/api/get-availability/?product-types=inspire-key-pass,believe-key-pass,enchant-key-pass,imagine-key-pass,dream-key-pass&destinationId=DLR&numMonths=14'
-wdwUrl='https://disneyworld.disney.go.com/passes/blockout-dates/api/get-availability/?product-types=disney-incredi-pass,disney-sorcerer-pass,disney-pirate-pass,disney-pixie-dust-pass&destinationId=WDW&numMonths=13'
+url=os.environ.get('DLR_URL')
+wdwUrl=os.environ.get('WDW_URL')
+bitDotIOConn=os.environ.get('BIT_DOT_IO_URL')
+
 
 #open the site
 print('opening the reservation site...')
@@ -41,6 +43,10 @@ pirate_avail=wdwParse_json[2]['availabilities']
 pixie_avail=wdwParse_json[3]['availabilities']
 
 def main():
+    dlrResort = "DLR"
+    wdwResort = "WDW"
+    get_all_availability(parse_json, dlrResort)
+    get_all_availability(wdwParse_json, wdwResort)
     today=date.today()
     d1 = today.strftime("%Y-%m-%d")
     print('removing past dates')
@@ -56,6 +62,8 @@ def main():
     print('creating list of notifications')
     notify()
 
+
+
 def remove_past_dates(today):
 #This function updates the remote db to remove any past dates
     a = bitdotio.bitdotio(apiKey)
@@ -68,7 +76,7 @@ def remove_past_dates(today):
 
         DELETE from disreserve WHERE date < '{}'""".format(today, today)
         
-    with a.get_connection("jimcreel/trial") as conn:
+    with a.get_connection(bitDotIOConn) as conn:
                 cursor = conn.cursor()
                 cursor.execute(remove_dates)
 
@@ -89,7 +97,7 @@ def update_data(new_data):
             SET available = {}
             WHERE date = '{}' and park = '{}' and pass = '{}'
             """.format(update_avail, update_date, update_park, update_pass)
-        with c.get_connection("jimcreel/trial") as conn:
+        with c.get_connection(bitDotIOConn) as conn:
                     cursor = conn.cursor()
                     cursor.execute(update_db)
 #This function connects to the remote db and returns a list of dates,
@@ -106,7 +114,7 @@ def get_list():
         FROM disreserve
         """
     #retrieve dates
-    with b.get_connection("jimcreel/trial") as conn:
+    with b.get_connection(bitDotIOConn) as conn:
         cursor = conn.cursor()
         cursor.execute(retrieve_data)
         record=cursor.fetchall()
@@ -184,6 +192,9 @@ def get_park_availability(querydate, avail, querypark):
             return availabilityDictionary['slots'][0]['available']
         
 
+
+
+    
 #This function makes a new call to the db to generate a list of notifications, generates a message, then sends out notifications via SMS or email  
 def notify():
     d = bitdotio.bitdotio(apiKey)
@@ -204,7 +215,7 @@ def notify():
     ck_nots = "If you wish to no longer receive notifications for this reservation, please open the following link:"
     
     #retrieve test data and store it in a list of tuples
-    with d.get_connection("jimcreel/trial") as dconn:
+    with d.get_connection(bitDotIOConn) as dconn:
         dcursor = dconn.cursor()
         dcursor.execute(update_notes)
         dcursor.execute(fetch_avail)
