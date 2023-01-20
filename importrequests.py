@@ -45,8 +45,6 @@ pixie_avail=wdwParse_json[3]['availabilities']
 def main():
     dlrResort = "DLR"
     wdwResort = "WDW"
-    get_all_availability(parse_json, dlrResort)
-    get_all_availability(wdwParse_json, wdwResort)
     today=date.today()
     d1 = today.strftime("%Y-%m-%d")
     print('removing past dates')
