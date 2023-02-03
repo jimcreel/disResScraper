@@ -1,18 +1,18 @@
 import requests
 import json
 import bitdotio
-import psycopg2
-import itertools
+
 import os
 from twilio.rest import Client
 from datetime import datetime
 from datetime import date
-import csv
+
 import smtplib, ssl
 from email.message import EmailMessage
 
 #get the api key
-apiKey=os.environ.get('BIT_DOT_IO_API_KEY')
+apiKey="v2_3yfwq_aDkRrp7qXcAr6RrDB6ixCfi"
+
 #target site
 url=os.environ.get('DLR_URL')
 wdwUrl=os.environ.get('WDW_URL')
@@ -54,6 +54,7 @@ def main():
     query_list=get_list()
     print('making list of queries')
     new_data=make_queries(query_list)
+    print(new_data)
     #print(new_data)
     print('updating new data')
     update_data(new_data)
@@ -65,18 +66,37 @@ def main():
 def remove_past_dates(today):
 #This function updates the remote db to remove any past dates
     a = bitdotio.bitdotio(apiKey)
-    remove_dates = """
+    check_dates = """
         
-        INSERT INTO oldresdates 
-        SELECT * FROM disreserve
-        WHERE date < '{}';
-
-
-        DELETE from disreserve WHERE date < '{}'""".format(today, today)
+        SELECT row_to_json(disreserve) from disreserve where date < '{}'""".format(today)
         
     with a.get_connection(bitDotIOConn) as conn:
                 cursor = conn.cursor()
+                cursor.execute(check_dates)
+                dateList = cursor.fetchall()
+    
+    for date in range(len(dateList)):
+        
+        arrDate = dateList[date][0]['date']
+        arrPass = dateList[date][0]['pass']
+        arrPark = dateList[date][0]['park']
+        arrUser = dateList[date][0]['userid']
+        
+        arrDateObject = datetime.strptime(arrDate, '%Y-%m-%d').date()
+        print(arrDateObject, today)
+        if arrDateObject < today:
+            move_dates = """
+            INSERT INTO oldresdates
+            SELECT * from disreserve WHERE date = '{}' AND pass = '{}' AND park = '{}' AND userid = '{}'""".format(arrDate, arrPass, arrPark, arrUser)
+            remove_dates = """
+            DELETE from disreserve WHERE date = '{}' AND pass = '{}'AND park = '{}' AND userid = '{}'
+            """.format(arrDate, arrPass, arrPark, arrUser)
+            with a.get_connection(bitDotIOConn) as conn:
+                cursor = conn.cursor()
+                cursor.execute(move_dates)
                 cursor.execute(remove_dates)
+                
+            
 
 #This function injects new data into the remote db
 def update_data(new_data):
@@ -134,23 +154,23 @@ def make_queries(query_list):
         check_resort = query_list[row][3]
         #print(check_pass)
         match check_pass:
-            case 'inspire':
+            case 'inspire-key-pass':
                 check_pass_json = inspire_avail
-            case 'believe':
+            case 'believe-key-pass':
                 check_pass_json = believe_avail
-            case 'enchant':
+            case 'enchant-key-pass':
                 check_pass_json = enchant_avail
-            case 'dream':
+            case 'dream-key-pass':
                 check_pass_json = dream_avail
-            case 'imagine':
+            case 'imagine-key-pass':
                 check_pass_json = imagine_avail
-            case 'incredipass':
+            case 'disney-incredi-pass':
                 check_pass_json = incredi_avail
-            case 'sorceror':
+            case 'disney-sorceror-pass':
                 check_pass_json = sorceror_avail
-            case 'pirate':
+            case 'disney-pirate-pass':
                 check_pass_json = pirate_avail
-            case 'pixie':
+            case 'disney-pixie-dust-pass':
                 check_pass_json = pixie_avail
        
         #print(check_pass_json)    
