@@ -11,7 +11,7 @@ import smtplib, ssl
 from email.message import EmailMessage
 
 #get the api key
-apiKey="v2_3yfwq_aDkRrp7qXcAr6RrDB6ixCfi"
+apiKey=os.environ.get('BIT_DOT_IO_API_KEY')
 
 #target site
 url=os.environ.get('DLR_URL')
