@@ -220,7 +220,7 @@ def notify():
     # selects only rows at which the specified park is available and which notifications are turned on
     
     fetch_avail = """
-        SELECT email, pass, park, date, notifications, method, phone, modified, resort
+        SELECT  pass, park, date, notifications, modified, resort
         FROM disreserve
         WHERE available= true AND notify = true
         """
