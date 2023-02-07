@@ -59,7 +59,7 @@ def main():
     print('updating new data')
     update_data(new_data)
     print('creating list of notifications')
-    notify()
+   # notify()
 
 
 
@@ -85,9 +85,11 @@ def remove_past_dates(today):
         arrDateObject = datetime.strptime(arrDate, '%Y-%m-%d').date()
         print(arrDateObject, today)
         if arrDateObject < today:
+            print("removing old dates...")
             move_dates = """
-            INSERT INTO oldresdates
+            INSERT INTO oldresdates (pass, park, date, available, notify, notifications, method, modified, resort, u)
             SELECT * from disreserve WHERE date = '{}' AND pass = '{}' AND park = '{}' AND userid = '{}'""".format(arrDate, arrPass, arrPark, arrUser)
+            print(move_dates)
             remove_dates = """
             DELETE from disreserve WHERE date = '{}' AND pass = '{}'AND park = '{}' AND userid = '{}'
             """.format(arrDate, arrPass, arrPark, arrUser)
@@ -214,13 +216,13 @@ def get_park_availability(querydate, avail, querypark):
 
     
 #This function makes a new call to the db to generate a list of notifications, generates a message, then sends out notifications via SMS or email  
-def notify():
+#def notify():
     d = bitdotio.bitdotio(apiKey)
     notify_list = []
     # selects only rows at which the specified park is available and which notifications are turned on
     
     fetch_avail = """
-        SELECT  pass, park, date, notifications, modified, resort
+        SELECT  pass, park, date, notifications, modified, resort, userid
         FROM disreserve
         WHERE available= true AND notify = true
         """
@@ -256,10 +258,11 @@ def notify():
             
 # iterate through the list of notifications and generate the message      
     for row in range(len(not_records)):
-        email = not_records[row][0]
-        magickey = not_records[row][1]
-        park = not_records[row][2]
-        resort = not_records[row][8]
+        print(not_records[row])
+        magickey = not_records[row][0]
+        park = not_records[row][1]
+        resort = not_records[row][5]
+        user = not_records[row][6]
         if (resort == 'DLR'):
             passOrKey = 'key'
             resUrl='https://tinyurl.com/5n8yetcw'
@@ -285,31 +288,26 @@ def notify():
         #datetime_obj = datetime.strptime(date, '%y-%m-%d')
         #print(datetime_obj)
         now = datetime.now()
-        nots = not_records[row][4]
-        method = not_records[row][5]
-        phone = not_records[row][6]
+        nots = not_records[row][3]
+        
         msg = ("Reservations {} are available on {} for {} {} holders. Visit {} to make your reservation.").format(parkfull,date,magickey,passOrKey,resUrl)
         #actual path to script log
         if os.path.exists('/home/jimcreel/Documents/git/disResScraper/notifications.log'):
             with open('/home/jimcreel/Documents/git/disResScraper/notifications.log', 'a') as logfile:
-                logmessage = 'Notification sent on {} via {} - {} - {} - {} - {}\n'.format(now,method, parkfull,date, nots, phone, email)
+                logmessage = 'Notification sent on {} via {} - {} - {} - {} \n'.format(now,parkfull,date, nots, user)
                 logfile.write(logmessage)
         #test environment path to log
         else:
             with open('notifications.log', 'a') as logfile:
-                logmessage = 'Notification sent on {} via {} - {} - {} - {} - {}\n'.format(now,method, parkfull,date, nots, phone, email)
+                logmessage = 'Notification sent on {} via {} - {} - {} - {}\n'.format(now,parkfull,date, nots, user)
                 logfile.write(logmessage)
         #print(msg)
        # print("to:",email,".","Reservations for",park,"are available for",date)
         #print(not_records[row][4])
         #print(method)
-        match method:
-            case 'phone':
-                phone_notifications(msg, phone, date, parkfull, magickey,nots)
-            case 'email':
-                email_notifications(email,date,parkfull,magickey)
+        
 #this function sends an sms notification
-def phone_notifications(msg, phone, date, parkfull, magickey,nots):
+#def phone_notifications(msg, phone, date, parkfull, magickey,nots):
     if (nots < 10):
         #send the not via sms        
         print(phone, msg)
@@ -328,7 +326,7 @@ def phone_notifications(msg, phone, date, parkfull, magickey,nots):
         
 
  #this function sends an email notification
-def email_notifications(email, date, parkfull, magickey):
+#def email_notifications(email, date, parkfull, magickey):
     print('attempting to send email')
     smtp_server = 'az1-ss106.a2hosting.com'
     port = 465
