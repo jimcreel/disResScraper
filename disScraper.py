@@ -87,9 +87,9 @@ def remove_past_dates(today):
         if arrDateObject < today:
             print("removing old dates...")
             move_dates = """
-            INSERT INTO oldresdates (pass, park, date, available, notify, notifications, method, modified, resort, u)
+            INSERT INTO oldresdates (pass, park, date, available, notify, notifications, method, modified, resort, userid)
             SELECT * from disreserve WHERE date = '{}' AND pass = '{}' AND park = '{}' AND userid = '{}'""".format(arrDate, arrPass, arrPark, arrUser)
-            print(move_dates)
+            
             remove_dates = """
             DELETE from disreserve WHERE date = '{}' AND pass = '{}'AND park = '{}' AND userid = '{}'
             """.format(arrDate, arrPass, arrPark, arrUser)
@@ -107,7 +107,10 @@ def update_data(new_data):
         update_park = new_data[row][2]
         update_pass = new_data[row][1]
         update_avail = new_data[row][3]
-        
+        print(update_date)
+        print(update_park)
+        print(update_pass)
+        print(update_avail)
         #connect to bit.io with api key
         c = bitdotio.bitdotio(apiKey)
 
@@ -117,6 +120,7 @@ def update_data(new_data):
             SET available = {}
             WHERE date = '{}' and park = '{}' and pass = '{}'
             """.format(update_avail, update_date, update_park, update_pass)
+        print(update_db)
         with c.get_connection(bitDotIOConn) as conn:
                     cursor = conn.cursor()
                     cursor.execute(update_db)
@@ -185,7 +189,8 @@ def make_queries(query_list):
             else: dlrResult = get_park_availability(check_date,check_pass_json,check_park)
             #print(check_date, check_park, result)    
             dlrResult_tup = (check_date, check_pass, check_park, dlrResult)
-            results_list.append(dlrResult_tup)
+            #print(dlrResult_tup)
+            ifresults_list.append(dlrResult_tup)
         if check_resort == 'WDW':
             if check_park == 'ANY':
                 mkResult = get_park_availability(check_date,check_pass_json,'WDW_MK')
@@ -196,19 +201,23 @@ def make_queries(query_list):
                     wdwResult = True
             else: wdwResult = get_park_availability(check_date,check_pass_json,check_park)
             #print(check_date, check_park, result)    
-            wdwResult_tup = (check_date, check_pass, check_park, wdwResult)
+            if wdwResult != 'None':
+                wdwResult_tup = (check_date, check_pass, check_park, wdwResult)
+           # print(wdwResult_tup)
             results_list.append(wdwResult_tup)
+    print(results_list)
     return(results_list)
 
 #This function searches the appropriate key data for the specified park/pass combination
 
 def get_park_availability(querydate, avail, querypark):
-    #print(avail)
+    
     
     for index, availabilityDictionary in enumerate(avail):
-        #print(dic['date'] + dic['facilityId'])
+        
         if availabilityDictionary['date'] == querydate and availabilityDictionary['facilityId'] == querypark:
             #print(i)
+            #print(availabilityDictionary['slots'][0]['available'])
             return availabilityDictionary['slots'][0]['available']
         
 
@@ -308,47 +317,47 @@ def get_park_availability(querydate, avail, querypark):
         
 #this function sends an sms notification
 #def phone_notifications(msg, phone, date, parkfull, magickey,nots):
-    if (nots < 10):
-        #send the not via sms        
-        print(phone, msg)
-        account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
-        auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-        client = Client(account_sid, auth_token)
-        message = client.messages \
-                .create(
-                body = msg,
-                from_ = "+15107267039",
-                to='+1{}'.format(phone)
-                )
-        print(message.sid)
-        # increment the notification counter
-        f = bitdotio.bitdotio(apiKey)
+#  if (nots < 10):
+#        #send the not via sms        
+#        print(phone, msg)
+#       account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+#       auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+#       client = Client(account_sid, auth_token)
+#       message = client.messages \
+#                .create(
+#                body = msg,
+#                from_ = "+15107267039",
+#                to='+1{}'.format(phone)
+#                )
+#        print(message.sid)
+#        # increment the notification counter
+#        f = bitdotio.bitdotio(apiKey) """
         
 
  #this function sends an email notification
 #def email_notifications(email, date, parkfull, magickey):
-    print('attempting to send email')
-    smtp_server = 'az1-ss106.a2hosting.com'
-    port = 465
-    send_email = 'notifications@magic-reservations.com'
-    receiver_email = email
-    password = os.environ.get('MAGIC_RESERVATIONS_EMAIL_PASSWORD')
-    context = ssl.create_default_context()
-    emailMsg = EmailMessage()
-    emailMsg.set_content('''
-           
-        Get ready to make your reservation! Park reservations are available on {} {}!\n
-        Visit https://tinyurl.com/5n8yetcw to make your reservation.\n
-        Thank you for using magic-reservations.com!'''.format(date,parkfull))
-    emailMsg['Subject'] = 'Reservations are available for {} keys on {}'.format(magickey,date)
-    emailMsg['From'] = send_email
-    emailMsg['To'] = receiver_email
-    
-    with smtplib.SMTP_SSL(smtp_server,port,context=context) as server:
-        server.login(send_email,password)
-        server.send_message(emailMsg, send_email, receiver_email)
-     # increment the notification counter
-    f = bitdotio.bitdotio(apiKey)
+# """    print('attempting to send email')
+#    smtp_server = 'az1-ss106.a2hosting.com'
+#    port = 465
+#    send_email = 'notifications@magic-reservations.com'
+#   receiver_email = email
+#    password = os.environ.get('MAGIC_RESERVATIONS_EMAIL_PASSWORD')
+#    context = ssl.create_default_context()
+#   emailMsg = EmailMessage()
+#   emailMsg.set_content('''
+#           
+#        Get ready to make your reservation! Park reservations are available on {} {}!\n
+#        Visit https://tinyurl.com/5n8yetcw to make your reservation.\n
+#        Thank you for using magic-reservations.com!'''.format(date,parkfull))
+#   emailMsg['Subject'] = 'Reservations are available for {} keys on {}'.format(magickey,date)
+#    emailMsg['From'] = send_email
+#    emailMsg['To'] = receiver_email
+#    
+#    with smtplib.SMTP_SSL(smtp_server,port,context=context) as server:
+#        server.login(send_email,password)
+#        server.send_message(emailMsg, send_email, receiver_email)
+#    # increment the notification counter
+#    f = bitdotio.bitdotio(apiKey) """
    
 main()
 
