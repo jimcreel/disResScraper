@@ -70,3 +70,5 @@ for list in flat_list:
     request_id = list['_id']
     col.update_one({'requests._id': request_id}, {'$set': {'requests.$.available': list['available']}})
 
+    #test
+
