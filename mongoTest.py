@@ -22,7 +22,7 @@ for data in x:
 
 
 flat_list = [item for sublist in request_list for item in sublist]
-
+update_list = []
         
 
 url=os.getenv('DLR_URL')
@@ -55,20 +55,23 @@ for list in json_list:
                                     flat_list[x]['available'] = date['slots'][0]['available']
                                     print(flat_list[x]['date'], '-' , date)
                                     print('changed')
+                                    update_list.append(flat_list[x])
                             if date['facilityId'] == resortString:
                                 if date['slots'][0]['available'] != flat_list[x]['available']:
                                     flat_list[x]['available'] = date['slots'][0]['available']
+                                    update_list.append(flat_list[x])
                                     #print(flat_list[x], '-' , date)
                                     #print('changed')
 
-for list in flat_list:
+for list in update_list:
     print(list)
 
 db = client['disney-reservations']
 col = db['users']
-for list in flat_list:
+for list in update_list:
     request_id = list['_id']
     col.update_one({'requests._id': request_id}, {'$set': {'requests.$.available': list['available']}})
-
+    list_match = col.find({}, {request_id { $in: requests._id}})
+    print(list_match)
     #test
 
