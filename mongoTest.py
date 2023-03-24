@@ -16,8 +16,12 @@ print('connecting to db')
 request_list = []
 print('building request list')
 for data in x:
-    print(data)
     request_list.append(data['requests'])
+
+print(request_list)
+
+
+flat_list = [item for sublist in request_list for item in sublist]
 
 
         
@@ -36,18 +40,19 @@ dates_dict = resp.text
 wdwDates=wdwResp.text
 parse_json = json.loads(dates_dict)
 
+for x in range(0, len(flat_list), 1):
+    for i in range(0, len(parse_json), 1):
+        if flat_list[x]['pass'] == parse_json[i]['passType']:
+            pass_avail = parse_json[i]['availabilities']
+            for date in pass_avail:
+                if flat_list[x]['date'] == date['date']:
+                    resortString = f'{flat_list[x]["resort"]}' + "_" + f'{flat_list[x]["park"]}'
+                    
+                    for facilities in date:
+                        if date['facilityId'] == resortString:
+                            print(date['facilityId'])
+                            print(flat_list[x]['park'] + ' request ' + flat_list[x]['date'])
+                            print(date['facilityId'] + ' has ' + f'{date["slots"][0]["available"]}') 
 
 
-def find_available_slots(requests, disAvail):
-    available_slots = []
-    for request in requests:
-        for slot in disAvail:
-            print(slot)
-            if slot['date'] == request['date'] and slot['facilityId'] == f"{request['resort']}_{request['park']}":
-                for sub_slot in slot['slots']:
-                    if request['pass'] in sub_slot['slotIds']:
-                        if sub_slot['available']:
-                            available_slots.append({'date': slot['date'], 'facilityId': slot['facilityId'], 'pass': request['pass']})
-    return available_slots
 
-print(find_available_slots(request_list, parse_json))
