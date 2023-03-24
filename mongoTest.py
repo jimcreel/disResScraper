@@ -18,11 +18,10 @@ print('building request list')
 for data in x:
     request_list.append(data['requests'])
 
-print(request_list)
+
 
 
 flat_list = [item for sublist in request_list for item in sublist]
-
 
         
 
@@ -39,20 +38,35 @@ wdwResp =requests.get(wdwUrl, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 6.
 dates_dict = resp.text
 wdwDates=wdwResp.text
 parse_json = json.loads(dates_dict)
+wdwParse = json.loads(wdwDates)
+json_list = [parse_json, wdwParse]
 
-for x in range(0, len(flat_list), 1):
-    for i in range(0, len(parse_json), 1):
-        if flat_list[x]['pass'] == parse_json[i]['passType']:
-            pass_avail = parse_json[i]['availabilities']
-            for date in pass_avail:
-                if flat_list[x]['date'] == date['date']:
-                    resortString = f'{flat_list[x]["resort"]}' + "_" + f'{flat_list[x]["park"]}'
-                    
-                    for facilities in date:
-                        if date['facilityId'] == resortString:
-                            print(date['facilityId'])
-                            print(flat_list[x]['park'] + ' request ' + flat_list[x]['date'])
-                            print(date['facilityId'] + ' has ' + f'{date["slots"][0]["available"]}') 
+for list in json_list:
+    for x in range(0, len(flat_list), 1):
+        for i in range(0, len(list), 1):
+            if flat_list[x]['pass'] == list[i]['passType']:
+                pass_avail = list[i]['availabilities']
+                for date in pass_avail:
+                    if flat_list[x]['date'] == date['date']:
+                        resortString = f'{flat_list[x]["resort"]}' + "_" + f'{flat_list[x]["park"]}'
+                        for facilities in date:
+                            if flat_list[x]['park'] == 'ANY':
+                                if date['slots'][0]['available'] != flat_list[x]['available'] and flat_list[x]['available'] == False:
+                                    flat_list[x]['available'] = date['slots'][0]['available']
+                                    print(flat_list[x]['date'], '-' , date)
+                                    print('changed')
+                            if date['facilityId'] == resortString:
+                                if date['slots'][0]['available'] != flat_list[x]['available']:
+                                    flat_list[x]['available'] = date['slots'][0]['available']
+                                    #print(flat_list[x], '-' , date)
+                                    #print('changed')
 
+for list in flat_list:
+    print(list)
 
+db = client['disney-reservations']
+col = db['users']
+for list in flat_list:
+    request_id = list['_id']
+    col.update_one({'requests._id': request_id}, {'$set': {'requests.$.available': list['available']}})
 
