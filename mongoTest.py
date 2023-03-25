@@ -4,6 +4,9 @@ import pymongo
 import os
 from dotenv import load_dotenv
 from pandas import DataFrame
+import smtplib
+import ssl
+from email.message import EmailMessage  
 
 load_dotenv()
 
@@ -71,7 +74,30 @@ col = db['users']
 for list in update_list:
     request_id = list['_id']
     col.update_one({'requests._id': request_id}, {'$set': {'requests.$.available': list['available']}})
-    list_match = col.find({}, {request_id { $in: requests._id}})
+    list_match = col.find( { 'requests._id': request_id } )
     print(list_match)
-    #test
+    for match in list_match:
+        print(match['email'])
+        print('attempting to send email')
+        smtp_server = 'az1-ss106.a2hosting.com'
+        port = 465
+        send_email = 'notifications@magic-reservations.com'
+        receiver_email = match['email']
+        password = os.getenv('MAGIC_RESERVATIONS_EMAIL_PASSWORD')
+        context = ssl.create_default_context()
+        emailMsg = EmailMessage()
+        emailMsg.set_content('''
+            
+            Get ready to make your reservation! Park reservations are available on  !\n
+            Visit https://tinyurl.com/5n8yetcw to make your reservation.\n
+            Thank you for using magic-reservations.com!''')
+        emailMsg['Subject'] = 'Reservations are available for  keys'
+        emailMsg['From'] = send_email
+        emailMsg['To'] = receiver_email
+        
+        with smtplib.SMTP_SSL(smtp_server,port,context=context) as server:
+            server.login(send_email,password)
+            server.send_message(emailMsg, send_email, receiver_email)
+
+        
 
