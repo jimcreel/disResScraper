@@ -46,6 +46,7 @@ resort_list = [dlr_parse, wdw_parse]
 
 
 def get_full_text(code):
+    print(f'received {code}')
     match code: 
         case 'DLR':
             return 'Disneyland Resort'
@@ -79,6 +80,8 @@ def get_full_text(code):
             return 'Pirate Annual Pass'
         case 'disney-pixie-dust-pass':
             return 'Pixie Dust Annual Pass'
+        case 'ANY':
+            return 'Any Park'
         
 def update_availability(resort_list):
     for list in resort_list:
@@ -93,8 +96,6 @@ def update_availability(resort_list):
                                 if flat_resort_list[x]['park'] == 'ANY':
                                     if date['slots'][0]['available'] != flat_resort_list[x]['available'] and flat_resort_list[x]['available'] == False:
                                         flat_resort_list[x]['available'] = date['slots'][0]['available']
-                                        print(flat_resort_list[x]['date'], '-' , date)
-                                        print('changed')
                                         update_list.append(flat_resort_list[x])
 
                                 elif date['facilityId'] == resortString:
@@ -109,18 +110,22 @@ def update_availability(resort_list):
 
 
 def notify(update_list):
+    print(update_list)
     db = client['disney-reservations']
     col = db['users']
+    
     for list in update_list:
         request_id = list['_id']
         park = get_full_text(list['park'])
-        date = get_full_text(list['date'])
+        date = list['date']
         annual_pass = get_full_text(list['pass'])
+        resort = get_full_text(list['resort'])
         col.update_one({'requests._id': request_id}, {'$set': {'requests.$.available': list['available']}})
         list_match = col.find( { 'requests._id': request_id } )
         
         for match in list_match:
-            print(match['email'])
+            
+          
             print('attempting to send email')
             smtp_server = 'az1-ss106.a2hosting.com'
             port = 465
@@ -131,10 +136,11 @@ def notify(update_list):
             emailMsg = EmailMessage()
             emailMsg.set_content(f'''
                 
-                Get ready to make your reservation! Park reservations are available on {date} at {park} !\n
+                Get ready to make your reservation! You requested an update when reservations were
+                available on {date} at {park} !\n
                 Visit https://tinyurl.com/5n8yetcw to make your reservation.\n
                 Thank you for using magic-reservations.com!''')
-            emailMsg['Subject'] = f'Reservations are available for {annual_pass} on {date}'
+            emailMsg['Subject'] = f'Reservations are available for {annual_pass} at {resort} on {date}'
             emailMsg['From'] = send_email
             emailMsg['To'] = receiver_email
             
