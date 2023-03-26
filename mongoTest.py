@@ -44,6 +44,42 @@ dlr_parse = json.loads(dlr_dates)
 wdw_parse = json.loads(wdw_dates)
 resort_list = [dlr_parse, wdw_parse]
 
+
+def get_full_text(code):
+    match code: 
+        case 'DLR':
+            return 'Disneyland Resort'
+        case 'WDW': 
+            return 'Walt Disney World'
+        case 'DP':
+            return 'Disneyland Park'
+        case 'CA':
+            return 'California Adventure'
+        case 'MK':
+            return 'Magic Kingdom'
+        case 'EP':
+            return 'EPCOT'
+        case 'AK':
+            return 'Animal Kingdom'
+        case 'HS':
+            return 'Hollywood Studios'
+        case 'inspire-key-pass':
+            return 'Inspire Magic Key'
+        case 'enchant-key-pass':
+            return 'Enchant Magic Key'
+        case 'believe-key-pass':
+            return 'Believe Magic Key'
+        case 'imagine-key-pass':
+            return 'Imagine Magic Key'
+        case 'disney-incredi-pass':
+            return 'Incredi-pass'
+        case 'disney-sorcerer-pass':
+            return 'Sorcerer Annual Pass'
+        case 'disney-pirate-pass':
+            return 'Pirate Annual Pass'
+        case 'disney-pixie-dust-pass':
+            return 'Pixie Dust Annual Pass'
+        
 def update_availability(resort_list):
     for list in resort_list:
         for x in range(0, len(flat_resort_list), 1):
@@ -77,9 +113,9 @@ def notify(update_list):
     col = db['users']
     for list in update_list:
         request_id = list['_id']
-        park = list['park']
-        date = list['date']
-        annual_pass = list['pass']
+        park = get_full_text(list['park'])
+        date = get_full_text(list['date'])
+        annual_pass = get_full_text(list['pass'])
         col.update_one({'requests._id': request_id}, {'$set': {'requests.$.available': list['available']}})
         list_match = col.find( { 'requests._id': request_id } )
         
@@ -98,7 +134,7 @@ def notify(update_list):
                 Get ready to make your reservation! Park reservations are available on {date} at {park} !\n
                 Visit https://tinyurl.com/5n8yetcw to make your reservation.\n
                 Thank you for using magic-reservations.com!''')
-            emailMsg['Subject'] = f'Reservations are available for {annual_pass} keys'
+            emailMsg['Subject'] = f'Reservations are available for {annual_pass} on {date}'
             emailMsg['From'] = send_email
             emailMsg['To'] = receiver_email
             
