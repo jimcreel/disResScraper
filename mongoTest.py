@@ -64,9 +64,11 @@ def update_availability(resort_list):
                                 elif date['facilityId'] == resortString:
                                     if date['slots'][0]['available'] != flat_resort_list[x]['available']:
                                         flat_resort_list[x]['available'] = date['slots'][0]['available']
-                                        update_list.append(flat_resort_list[x])
-                                        #print(flat_resort_list[x], '-' , date)
-                                        #print('changed')
+                                        if flat_resort_list[x]['available'] == True:
+                                            update_list.append(flat_resort_list[x])
+                                            #print(flat_resort_list[x], '-' , date)
+                                            #print('changed')
+                                
                   
 
 
