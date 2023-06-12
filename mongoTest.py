@@ -129,7 +129,7 @@ def notify(update_list):
         for match in list_match:
             
           
-            print('attempting to send email')
+            print('attempting to send email to' + match['email'])
             smtp_server = 'smtp.gmail.com'
             port = 465
             send_email = 'notifications@magic-reservations.com'
