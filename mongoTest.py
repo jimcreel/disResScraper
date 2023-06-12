@@ -26,6 +26,8 @@ for data in x:
 
 flat_resort_list = [item for sublist in request_list for item in sublist]
 update_list = []
+
+print('building flat resort list')
         
 
 url=os.getenv('DLR_URL')
@@ -127,7 +129,7 @@ def notify(update_list):
             
           
             print('attempting to send email')
-            smtp_server = 'az1-ss106.a2hosting.com'
+            smtp_server = 'smtp.gmail.com'
             port = 465
             send_email = 'notifications@magic-reservations.com'
             receiver_email = match['email']
