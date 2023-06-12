@@ -21,7 +21,8 @@ print('building request list')
 for data in x:
     request_list.append(data['requests'])
 
-
+print('request list built')
+print(request_list)
 
 
 flat_resort_list = [item for sublist in request_list for item in sublist]
