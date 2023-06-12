@@ -106,8 +106,8 @@ def update_availability(resort_list):
                                         flat_resort_list[x]['available'] = date['slots'][0]['available']
                                         if flat_resort_list[x]['available'] == True:
                                             update_list.append(flat_resort_list[x])
-                                            #print(flat_resort_list[x], '-' , date)
-                                            #print('changed')
+                                            print(flat_resort_list[x], '-' , date)
+                                            print('changed')
                                 
                   
 
