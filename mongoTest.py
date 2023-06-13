@@ -124,6 +124,8 @@ def notify(update_list):
         annual_pass = get_full_text(list['pass'])
         resort = get_full_text(list['resort'])
         col.update_one({'requests._id': request_id}, {'$set': {'requests.$.available': list['available']}})
+        # update column to increment number of notifications
+        col.update_one({'requests._id': request_id}, {'$inc': {'requests.$.notifications': 1}})
         list_match = col.find( { 'requests._id': request_id } )
         
         for match in list_match:
